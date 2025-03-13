@@ -1,0 +1,96 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2014 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 23-Feb-2014         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* This schema describes various financial instruments like checks and       *)
+(* invoices.                                                                 *)
+SCHEMA InstrumentFinancial;
+    USE FROM Common   (ObjectInsurance, Money);
+    USE FROM DateTime (Date, Year, Month);
+    USE FROM Party    (Party, Address);
+
+    TYPE CodeStatusFinancialInstrument = ENUMERATION OF (
+        Pending,
+        Cleared,
+        Denied,
+        Issued,
+        Stopped,
+        Voided
+        );
+    END_TYPE;
+
+    TYPE CodeHandlingCheck = ENUMERATION OF (
+        Hold,
+        MailToAgent,
+        MailToClaimant,
+        ForwardToAdjuster
+        );
+    END_TYPE;
+    
+    TYPE CodeRelationPayerPayee = ENUMERATION of (
+        Payer, 
+        Payee
+    	);
+    END_TYPE;
+
+    (*-----------------------------------------------------------------------*)
+    (*  Financial Instruments                                                *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* A financial instrument is a method of payment                         *)
+    ENTITY InstrumentFinancial SUBTYPE OF (ObjectInsurance);
+        numberPayment : INTEGER;
+        dateRequested : Date;
+        dateIssued    : Date;
+        dateCancelled : OPTIONAL Date;
+        amount        : Money;
+        status        : CodeStatusFinancialInstrument; 
+        payor         : Party;
+        payTo         : STRING;
+    UNIQUE 
+        unique_payment_number : numberPayment;
+    END_ENTITY;
+    
+    (* Payees                                                                *)
+    ENTITY RelationPayerPayee SUBTYPE OF (ObjectInsurance);
+        instrumentFinancial : InstrumentFinancial;
+        payee : Party;
+    END_ENTITY;
+        
+    (* Check is a paper financial instrument                                 *)
+    ENTITY Check SUBTYPE OF (InstrumentFinancial);
+        addressMailTo : Address;
+        dateCleared   : OPTIONAL Date;
+        handlingCheck : CodeHandlingCheck;
+    END_ENTITY;  
+    
+    (* A manual check is a check written in a branch                         *)
+    ENTITY CheckManual SUBTYPE OF (Check);
+    END_ENTITY;
+    
+    (* Electronic Funds Transfer                                             *)
+    ENTITY EFT SUBTYPE OF (InstrumentFinancial);
+        nameBankRecipiant          : STRING;
+        numberRoutingBankRecipient : STRING;
+        numberAccount              : STRING;
+    END_ENTITY;
+    
+    (* Credit card payment                                                   *)
+    ENTITY ChargeCardCredit SUBTYPE OF (InstrumentFinancial);
+        numberCardCredit : STRING;
+        monthDateExpires : Month;
+        yearDateExpires  : Year;
+    END_ENTITY;    
+
+END_SCHEMA;
+

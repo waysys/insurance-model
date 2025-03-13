@@ -1,0 +1,204 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2014 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 23-Feb-2014         File created                   WAS                    *)
+(* 27-Jul-2014         Changed charge type            WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(*                                                                           *)
+(* The accounting schema represents the recording of financial information   *)
+(* related to billing and claims.  Some definitions are from:                *)
+(*                                                                           *)
+(* Insurance Accounting & Systems Association, Inc, Property-Casualty        *)
+(* Insurance Accounting, 1998. (Appendix A)                                  *)
+(*                                                                           *)
+
+SCHEMA Accounting;
+    USE FROM Common (ObjectInsurance, ObjectEffectivity, Money, Percent); 
+    USE FROM DateTime (CodeDuration, Date);
+    USE FROM Account (Account);
+
+    TYPE CodeTypeAccountLedger = ENUMERATION OF (
+        Asset,
+        Liability,
+        Equity,
+        Revenue,
+        Expense
+    );
+    END_TYPE;
+
+    (* The account number specification should be modified to reflect        *)
+    (* general ledger account numbers used by your company                   *)
+    TYPE NumberAccountLedger = STRING;
+    END_TYPE; 
+    
+    TYPE CodeGAAPStatutory = ENUMERATION OF (
+        GAAP,
+        Statutory,
+        Both
+    );
+    END_TYPE;   
+    
+    TYPE CodeSummaryDetail = ENUMERATION OF (
+        Summary,
+        Detail
+    );
+    END_TYPE;
+
+    TYPE CodeTypeTransaction = EXTENSIBLE ENUMERATION OF (
+        ClaimPayment,
+        ClaimReserve,
+        ClaimRecovery,
+        BillingDirect,
+        BillingAgency,
+        PaymentReceivedDirect,
+        PaymentReceivedAgency,
+        CommissionEarned,
+        CommissionPaid,
+        Transfer,
+        Refund,
+        WriteOff
+    );
+    END_TYPE;
+
+    TYPE CodeTypeLine = ENUMERATION OF (
+        CourtCost,
+        Discovery,
+        Experts,
+        FileReview,
+        Interest,
+        Hospital,
+        Mileage,
+        Nurse,
+        Doctor,
+        Other,
+        RecoveryAmount,
+        LAEWithheld,
+        LAEWithheldOffset
+        );
+    END_TYPE;
+
+    TYPE CodeTypeCharge = ENUMERATION OF (
+        Fee,
+        General,
+        Premium,
+        Recapture,
+        Tax,
+        AmountDue,
+        PayInFull
+    );
+    END_TYPE;
+    
+    TYPE CodeHandlingInvoice = ENUMERATION OF (
+        Installment,
+        Single,
+        DepositSingle,
+        InstallmentSingle
+    );
+    END_TYPE;
+    
+    TYPE CodeRecognitionRevenue = ENUMERATION OF (
+        Immediate,
+        PassThrough,
+        ProRata,
+        Recapture
+    );
+    END_TYPE;
+    
+    TYPE CodeDebitCredit = ENUMERATION OF (
+        Debit,
+        Credit
+    );
+    END_TYPE;
+
+    TYPE Frequency = INTEGER;
+    WHERE 
+        frequency : SELF IN [0, 1, 2, 4, 6, 12, 52];
+    END_TYPE;
+
+    (*                                                                       *)
+    (* General Ledger Accounts                                               *)
+    (*                                                                       *)
+    
+    (* The account type describes they type of general ledger account        *)
+    ENTITY TypeAccountLedgerGeneral SUBTYPE OF (ObjectInsurance);
+        typeAccount     : CodeTypeAccountLedger;
+        numberAccount   : NumberAccountLedger;
+        statutoryOrGAAP : CodeGAAPStatutory; 
+        summaryDetail   : CodeSummaryDetail;
+        nameAccount     : STRING;
+    UNIQUE
+        unique_account_number : numberAccount;     
+    END_ENTITY;
+         
+    (* A general ledger account is an entry in the chart of accounts.        *)
+    ENTITY AccountLedgerGeneral SUBTYPE OF (ObjectInsurance);
+        typeAccountLegerGeneral : TypeAccountLedgerGeneral;
+        account                 : Account;
+    END_ENTITY;
+                    
+    (*                                                                       *)
+    (* Transactions                                                          *)
+    (*                                                                       *)
+    
+    (* A transaction represents a journal entry in the accounting system.    *)
+    (* It is the parent entity to specific business transaction.             *)
+    ENTITY Transaction SUBTYPE OF (ObjectInsurance);
+        typeTransaction : CodeTypeTransaction;
+        dateTransaction : Date;
+        dateEntry       : Date;
+        period          : PeriodAccounting;
+    END_ENTITY;
+
+    (* An accounting period is a specific amount of time for organizing      *)
+    (* financial information.  Accounting periods have specified durations.  *)
+    (* Examples of durations are Annual, Quarterly, and Monthly.             *)
+    ENTITY PeriodAccounting SUBTYPE OF (ObjectEffectivity);
+        duration : CodeDuration;
+        within   : PeriodAccounting;
+    UNIQUE
+        effectivity : effectivity;
+    END_ENTITY;
+
+    (* A line item relates a financial amount to an organization account,    *)
+    (* a transaction, and an amount of money.                                *)
+    ENTITY ItemLine;
+        ledger      : AccountLedgerGeneral;
+        transaction : Transaction;
+        typeLine    : CodeTypeLine;
+        debit       : Money;
+        credit      : Money;
+    END_ENTITY;    
+
+    (*                                                                       *)
+    (* Charge types                                                          *)
+    (*                                                                       *)
+
+    (* Charge types are categories of charges associated with instructions   *)
+    ENTITY TypeCharge SUBTYPE OF (ObjectInsurance);
+        codeTypeCharge     : CodeTypeCharge;
+        name               : STRING;
+        handlingInovice    : CodeHandlingInvoice;
+        recognitionRevenue : CodeRecognitionRevenue;
+        frequency          : Frequency;
+    END_ENTITY;
+    
+    (* Charge allocations specify how the charge is allocated to general     *)
+    (* ledger accounts                                                       *)
+    ENTITY AllocationCharge SUBTYPE OF (ObjectInsurance);
+        typeCharge        : TypeCharge;
+        allocation        : Percent;
+        debitCredit       : CodeDebitCredit;
+        typeAccountLedger : TypeAccountLedgerGeneral;
+    END_ENTITY;
+        
+END_SCHEMA;
+

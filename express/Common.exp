@@ -1,0 +1,57 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The Common Schema describes classes commonly used in other schemas.       *)
+SCHEMA Common;
+    USE FROM Party (User);
+    USE FROM DateTime (RangeDate, Timestamp);
+
+    TYPE Money = NUMBER;
+    END_TYPE;
+    
+
+    TYPE PerCent = NUMBER;
+    WHERE
+        range : (SELF >= 0.00) And (SELF <= 100.00);
+    END_TYPE;
+    
+    (*                                                                       *)
+    (* Parent Objects                                                        *)
+    (*                                                                       *)    
+ 
+	(* The insurance object is the parent class of other insurance classes.  *)
+	ENTITY ObjectInsurance;
+		created : Timestamp;   -- time created
+		modified : Timestamp;  -- time last modified
+		userCreate : STRING;   -- user who created the entity
+		userModified : STRING; -- user who modified the entity
+	END_ENTITY;
+
+    (* The effectivity object is the parent class of other classes that have  *)
+    (* a period in which the object is in effect.                             *)
+    ENTITY ObjectEffectivity SUBTYPE OF (ObjectInsurance);
+        effectivity : RangeDate;
+    END_ENTITY;
+    
+    (* A link object relates two or more entities                             *)
+    ENTITY ObjectLink SUBTYPE OF (ObjectInsurance);
+    END_ENTITY;
+    
+    (* The effectivity link object relates two or more entities and the       *)
+    (* relationship exists for a specified time period                        *)
+    ENTITY ObjectLinkEffectivity SUBTYPE OF (ObjectEffectivity);
+    END_ENTITY;
+    
+END_SCHEMA;
+

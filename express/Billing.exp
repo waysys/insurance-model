@@ -1,0 +1,239 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* Billing describes the way insureds are billed for premium.                *)
+(* There are many transactions, only some are listed here.                   *)
+SCHEMA Billing;
+    USE FROM Common (ObjectEffectivity, ObjectInsurance, Money);
+    USE FROM DateTime (Date);
+    USE FROM Party (Party, CodeState, Telephone, Organization);
+    USE FROM Plan (PlanCommission, PlanPayment);
+    USE FROM Policy (VersionPolicy);
+    USE FROM InstrumentFinancial (InstrumentFinancial);
+    USE FROM Accounting (Transaction, AccountLedgerGeneral, 
+        TypeCharge);
+    USE FROM Account (Account, AccountProducer);
+    
+    TYPE CodeStatusInvoice = ENUMERATION OF (
+        Planned,
+        Billed,
+        Due,
+        CarriedForward,
+        Voided
+    );
+    END_TYPE;
+    
+    TYPE CodeTypeInvoice = ENUMERATION OF (
+        Account,
+        Statement
+    );
+    END_TYPE;
+    
+    TYPE CodeTypeInstruction = ENUMERATION OF (
+        Billing,
+        Payment,
+        Commission,
+        Refund
+    );
+    END_TYPE;
+    
+    TYPE CodeOperationPolicy = ENUMERATION OF (
+        Issuance,
+        Change,
+        Renewal,
+        Rewrite,
+        Cancel
+    );
+    END_TYPE;
+    
+    TYPE CodeTypeFundsReceived = ENUMERATION OF (
+        AgencyBill,
+        DirectBill
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeReminder = ENUMERATION OF (
+        Cancel,
+        AmountDue,
+        WriteOff,
+        Reinstate,
+        Collection
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeBilling = ENUMERATION OF (
+        PremiumDue,
+        BillCancel,
+        CancellationNotice
+        );
+    END_TYPE;
+            
+    (*-----------------------------------------------------------------------*)
+    (* Producer                                                              *)
+    (*-----------------------------------------------------------------------*)
+        
+    (* The PlanCommissionProdducer represents the relation between an agency *)
+    (* and a commission plan                                                 *)
+    ENTITY PlanCommissionProducer SUBTYPE OF (ObjectEffectivity);
+        codeProducer : STRING;
+        producer : AccountProducer;
+        planCommission : PlanCommission;
+    END_ENTITY;    
+
+    (*-----------------------------------------------------------------------*) 
+    (* Invoice                                                               *)
+    (*-----------------------------------------------------------------------*) 
+    
+    (* This class is the parent class for the specific types of invoices.    *)
+    ENTITY Invoice SUBTYPE OF (ObjectInsurance);
+        numberInvoice : STRING;
+        status : CodeStatusInvoice;
+        typeBilling : CodeTypeBilling;
+        dateIssue : Date;
+        dateDue : Date;
+        typeInovice : CodeTypeInvoice;
+        payer : Account;
+        amountDue : Money;
+        amountPayInFull : Money;
+        versionPolicy : VersionPolicy;
+        businessState : CodeState;
+        payableTo : Organization;
+        phoneCreditCard : Telephone;
+        optionPaymentContact : Organization;
+        dateCancel : OPTIONAL Date;
+    END_ENTITY;
+        
+    (* Invoice items provide the detail for the invoice.                     *)
+    ENTITY ItemInvoice SUBTYPE OF (ObjectInsurance);
+        invoice    : Invoice;
+        amount     : Money;
+        charge     : Charge;
+        numberLine : INTEGER;
+    WHERE
+        line_number : numberLine > 0;
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*) 
+    (* Instructions                                                          *)
+    (*-----------------------------------------------------------------------*) 
+    
+    (* An instruction is data passed  to billing to initiate an action       *)
+    (* to generage documents and accounting entries.                         *)
+    ENTITY Instruction SUBTYPE OF (ObjectInsurance);
+        typeInstruction : CodeTypeInstruction;
+        account         : Account; 
+        dateInstruction : Date; 
+        versionPolicy   : VersionPolicy;         
+    END_ENTITY;
+
+    (* Charges are specific charges as part of an instruction.               *)
+    ENTITY Charge SUBTYPE OF (ObjectInsurance);
+        instruction   : Instruction;
+        typeCharge    : TypeCharge;
+        amount        : Money;
+        dateCharge    : Date;
+     END_ENTITY;
+     
+     (* A billing instruction is used to initiate  an invoice and related    *)
+     (* transaction.                                                         *)
+     ENTITY InstructionBilling SUBTYPE OF (Instruction);
+        operationPolicy : CodeOperationPolicy;
+        typeBilling : CodeTypeBilling;
+     END_ENTITY;
+     
+     (* A payment instruction is used to initiate the processing of a        *)
+     (* payment made by an insured                                           *)
+     ENTITY InstructionFundsReceived SUBTYPE OF (Instruction);
+        payment : InstrumentFinancial;
+     END_ENTITY;
+     
+     (* A refund instruction is used to initiate a refund to an insured      *)
+     ENTITY InstructionRefund SUBTYPE OF (Instruction);
+     
+     END_ENTITY;
+     
+     (* A commission payment instruction is used to initiate a payment of    *)
+     (* a commission                                                         *)
+     ENTITY InstructionCommission SUBTYPE OF (Instruction);
+        
+     END_ENTITY;
+
+    (*-----------------------------------------------------------------------*) 
+    (* Funds Received                                                        *)
+    (*-----------------------------------------------------------------------*) 
+    
+    (* The received fund is the parent of various types of funds paid to     *)
+    (* the carrier.                                                          *)
+    ENTITY FundsReceived SUBTYPE OF (ObjectInsurance);
+       amount : Money;
+       dateReceived : Date;
+       reversed : BOOLEAN;
+       instrumentFinancial : InstrumentFinancial;
+       account : Account;
+    END_ENTITY;
+
+    (* Reversed funds received represents a reversal of funds received.      *)
+    ENTITY FundsReceivedReversed SUBTYPE OF (ObjectInsurance);
+       fundsReceived : FundsReceived;
+       dateReversed : Date;
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*) 
+    (* Credits                                                               *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* Credited funds are amounts credited to the account                    *)
+    ENTITY FundsCredited SUBTYPE OF (ObjectInsurance);
+        amount : Money;
+        dateCredited : Date;
+        account : Account;
+        reversed : BOOLEAN;
+        typeFundsReceived : CodeTypeFundsReceived;
+    END_ENTITY; 
+    
+    (* Reversed credits are amounts removed from the account.                *)
+    ENTITY FundsCreditedReversed SUBTYPE OF (ObjectInsurance);
+        fundsCredited : FundsCredited;
+        dateReversed : Date;
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*) 
+    (* Commision Funds Paid                                                  *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* Commission funds paid are amounts paid to an agency.                  *)
+    ENTITY FundsCommissionPaid SUBTYPE OF (ObjectInsurance);
+        amount : Money;
+        dateCredited : Date;
+        account : Account;
+        reversed : BOOLEAN;    
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*) 
+    (* Billiing Reminder                                                     *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* A reminder is a notation to the system to perform an action at a      *)
+    (* specified date.  A reminder is created at a certain and has a         *)
+    (* a reminder date in the future.  The type of reminder dictatest the    *)
+    (* action.                                                               *)
+    ENTITY ReminderBilling SUBTYPE OF (ObjectInsurance);
+       dateReminder : Date;
+       typeReminder : CodeTypeReminder;
+       versionPolicy : VersionPolicy;
+       amount : Money;
+    END_ENTITY;
+         
+END_SCHEMA;
+

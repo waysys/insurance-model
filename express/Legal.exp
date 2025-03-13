@@ -1,0 +1,60 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 08-Sep-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The legal schema describes legal events related to claims                 *)
+
+SCHEMA legal;
+    USE FROM Common (ObjectEffectivity);  
+    USE FROM Party (Party);
+    USE FROM Claim (Claim);
+    
+    TYPE CodeTypeProceedingLegal = EXTENSIBLE ENUMERATION OF (
+        Arbitration,
+        LawSuit,
+        Other
+        );
+    END_TYPE;   
+    
+    TYPE CodeRoleProceeding = EXTENSIBLE ENUMERATION OF (
+        Plaintiff,
+        Defendant,
+        AttorneyPlaintiff,
+        AttorneyDefendant,
+        Judge,
+        Witness,
+        Other
+        );
+    END_TYPE;
+       
+    (*                                                                       *)
+    (* Legal Proceedings                                                     *)
+    (*                                                                       *)
+        
+    (* A legal proceeding is a suit, arbitration, or other legal activity    *)
+    (* related to a claim                                                    *)
+    ENTITY ProceedingLegal SUBTYPE OF (ObjectEffectivity);
+        name : STRING;
+        claim : Claim;
+        codeTypeProceedingLegal : CodeTypeProceedingLegal;
+    END_ENTITY;
+    
+    (* Proceeding party entity links parties to legal proceedings            *)
+    ENTITY ProceedingParty SUBTYPE OF (ObjectEffectivity);
+        codeRole : CodeRoleProceeding;
+        party : Party;
+        proceedingLegal : ProceedingLegal;
+    END_ENTITY;
+
+END_SCHEMA;
+

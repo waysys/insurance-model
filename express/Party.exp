@@ -1,0 +1,486 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013, 2016 Waysys LLC                                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(* 07-Feb-2016         Changes to date and time       WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The Party schema describes persons and companies.                         *)
+
+SCHEMA Party;
+    USE FROM Common (ObjectInsurance, ObjectEffectivity);
+    USE FROM DateTime (Date);
+
+    CONSTANT
+        states : SET OF CodeState := [
+		'AL',
+		'AK',
+		'AS',
+		'AZ',
+		'AR',
+		'CA',
+		'CO',
+		'CT',
+		'DE',
+		'DC',
+		'FL',
+		'GA',
+		'GU',
+		'HI',
+		'ID',
+		'IL',
+		'IN',
+		'IA',
+		'KS',
+		'KY',
+		'LA',
+		'ME',
+		'MH',
+		'MD',
+		'MA',
+		'MI',
+		'MN',
+		'MS',
+		'MO',
+		'MT',
+		'NE',
+		'NV',
+		'NH',
+		'NJ',
+		'NM',
+		'NY',
+		'NC',
+		'ND',
+		'OH',
+		'OK',
+		'OR',
+		'PA',
+		'PR',
+		'RI',
+		'SC',
+		'SD',
+		'TN',
+		'TX',
+		'UT',
+		'VT',
+		'VI',
+		'VA',
+		'WA',
+		'WV',
+		'WI',
+		'WY'
+        ];
+        
+        countries : SET OF CodeCountry := [
+		'AF',   --AFGHANISTAN
+		'AX',   --ÅLAND ISLANDS
+		'AL',   --ALBANIA
+		'DZ',   --ALGERIA
+		'AS',   --AMERICAN SAMOA
+		'AD',   --ANDORRA
+		'AO',   --ANGOLA
+		'AI',   --ANGUILLA
+		'AQ',   --ANTARCTICA
+		'AG',   --ANTIGUA AND BARBUDA
+		'AR',   --ARGENTINA
+		'AM',   --ARMENIA
+		'AW',   --ARUBA
+		'AU',   --AUSTRALIA
+		'AT',   --AUSTRIA
+		'AZ',   --AZERBAIJAN
+		'BS',   --BAHAMAS
+		'BH',   --BAHRAIN
+		'BD',   --BANGLADESH
+		'BB',   --BARBADOS
+		'BY',   --BELARUS
+		'BE',   --BELGIUM
+		'BZ',   --BELIZE
+		'BJ',   --BENIN
+		'BM',   --BERMUDA
+		'BT',   --BHUTAN
+		'BO',   --BOLIVIA', PLURINATIONAL STATE OF
+		'BQ',   --BONAIRE', SINT EUSTATIUS AND SABA
+		'BA',   --BOSNIA AND HERZEGOVINA
+		'BW',   --BOTSWANA
+		'BV',   --BOUVET ISLAND
+		'BR',   --BRAZIL
+		'IO',   --BRITISH INDIAN OCEAN TERRITORY
+		'BN',   --BRUNEI DARUSSALAM
+		'BG',   --BULGARIA
+		'BF',   --BURKINA FASO
+		'BI',   --BURUNDI
+		'KH',   --CAMBODIA
+		'CM',   --CAMEROON
+		'CA',   --CANADA
+		'CV',   --CAPE VERDE
+		'KY',   --CAYMAN ISLANDS
+		'CF',   --CENTRAL AFRICAN REPUBLIC
+		'TD',   --CHAD
+		'CL',   --CHILE
+		'CN',   --CHINA
+		'CX',   --CHRISTMAS ISLAND
+		'CC',   --COCOS (KEELING) ISLANDS
+		'CO',   --COLOMBIA
+		'KM',   --COMOROS
+		'CG',   --CONGO
+		'CD',   --CONGO', THE DEMOCRATIC REPUBLIC OF THE
+		'CK',   --COOK ISLANDS
+		'CR',   --COSTA RICA
+		'CI',   --CÔTE D'IVOIRE
+		'HR',   --CROATIA
+		'CU',   --CUBA
+		'CW',   --CURAÇAO
+		'CY',   --CYPRUS
+		'CZ',   --CZECH REPUBLIC
+		'DK',   --DENMARK
+		'DJ',   --DJIBOUTI
+		'DM',   --DOMINICA
+		'DO',   --DOMINICAN REPUBLIC
+		'EC',   --ECUADOR
+		'EG',   --EGYPT
+		'SV',   --EL SALVADOR
+		'GQ',   --EQUATORIAL GUINEA
+		'ER',   --ERITREA
+		'EE',   --ESTONIA
+		'ET',   --ETHIOPIA
+		'FK',   --FALKLAND ISLANDS (MALVINAS)
+		'FO',   --FAROE ISLANDS
+		'FJ',   --FIJI
+		'FI',   --FINLAND
+		'FR',   --FRANCE
+		'GF',   --FRENCH GUIANA
+		'PF',   --FRENCH POLYNESIA
+		'TF',   --FRENCH SOUTHERN TERRITORIES
+		'GA',   --GABON
+		'GM',   --GAMBIA
+		'GE',   --GEORGIA
+		'DE',   --GERMANY
+		'GH',   --GHANA
+		'GI',   --GIBRALTAR
+		'GR',   --GREECE
+		'GL',   --GREENLAND
+		'GD',   --GRENADA
+		'GP',   --GUADELOUPE
+		'GU',   --GUAM
+		'GT',   --GUATEMALA
+		'GG',   --GUERNSEY
+		'GN',   --GUINEA
+		'GW',   --GUINEA-BISSAU
+		'GY',   --GUYANA
+		'HT',   --HAITI
+		'HM',   --HEARD ISLAND AND MCDONALD ISLANDS
+		'VA',   --HOLY SEE (VATICAN CITY STATE)
+		'HN',   --HONDURAS
+		'HK',   --HONG KONG
+		'HU',   --HUNGARY
+		'IS',   --ICELAND
+		'IN',   --INDIA
+		'ID',   --INDONESIA
+		'IR',   --IRAN', ISLAMIC REPUBLIC OF
+		'IQ',   --IRAQ
+		'IE',   --IRELAND
+		'IM',   --ISLE OF MAN
+		'IL',   --ISRAEL
+		'IT',   --ITALY
+		'JM',   --JAMAICA
+		'JP',   --JAPAN
+		'JE',   --JERSEY
+		'JO',   --JORDAN
+		'KZ',   --KAZAKHSTAN
+		'KE',   --KENYA
+		'KI',   --KIRIBATI
+		'KP',   --KOREA', DEMOCRATIC PEOPLE'S REPUBLIC OF
+		'KR',   --KOREA', REPUBLIC OF
+		'KW',   --KUWAIT
+		'KG',   --KYRGYZSTAN
+		'LA',   --LAO PEOPLE'S DEMOCRATIC REPUBLIC
+		'LV',   --LATVIA
+		'LB',   --LEBANON
+		'LS',   --LESOTHO
+		'LR',   --LIBERIA
+		'LY',   --LIBYA
+		'LI',   --LIECHTENSTEIN
+		'LT',   --LITHUANIA
+		'LU',   --LUXEMBOURG
+		'MO',   --MACAO
+		'MK',   --MACEDONIA', THE FORMER YUGOSLAV REPUBLIC OF
+		'MG',   --MADAGASCAR
+		'MW',   --MALAWI
+		'MY',   --MALAYSIA
+		'MV',   --MALDIVES
+		'ML',   --MALI
+		'MT',   --MALTA
+		'MH',   --MARSHALL ISLANDS
+		'MQ',   --MARTINIQUE
+		'MR',   --MAURITANIA
+		'MU',   --MAURITIUS
+		'YT',   --MAYOTTE
+		'MX',   --MEXICO
+		'FM',   --MICRONESIA', FEDERATED STATES OF
+		'MD',   --MOLDOVA', REPUBLIC OF
+		'MC',   --MONACO
+		'MN',   --MONGOLIA
+		'ME',   --MONTENEGRO
+		'MS',   --MONTSERRAT
+		'MA',   --MOROCCO
+		'MZ',   --MOZAMBIQUE
+		'MM',   --MYANMAR
+		'NA',   --NAMIBIA
+		'NR',   --NAURU
+		'NP',   --NEPAL
+		'NL',   --NETHERLANDS
+		'NC',   --NEW CALEDONIA
+		'NZ',   --NEW ZEALAND
+		'NI',   --NICARAGUA
+		'NE',   --NIGER
+		'NG',   --NIGERIA
+		'NU',   --NIUE
+		'NF',   --NORFOLK ISLAND
+		'MP',   --NORTHERN MARIANA ISLANDS
+		'NO',   --NORWAY
+		'OM',   --OMAN
+		'PK',   --PAKISTAN
+		'PW',   --PALAU
+		'PS',   --PALESTINE', STATE OF
+		'PA',   --PANAMA
+		'PG',   --PAPUA NEW GUINEA
+		'PY',   --PARAGUAY
+		'PE',   --PERU
+		'PH',   --PHILIPPINES
+		'PN',   --PITCAIRN
+		'PL',   --POLAND
+		'PT',   --PORTUGAL
+		'QA',   --QATAR
+		'RE',   --RÉUNION
+		'RO',   --ROMANIA
+		'RU',   --RUSSIAN FEDERATION
+		'RW',   --RWANDA
+		'BL',   --SAINT BARTHÉLEMY
+		'SH',   --SAINT HELENA', ASCENSION AND TRISTAN DA CUNHA
+		'KN',   --SAINT KITTS AND NEVIS
+		'LC',   --SAINT LUCIA
+		'MF',   --SAINT MARTIN (FRENCH PART)
+		'PM',   --SAINT PIERRE AND MIQUELON
+		'VC',   --SAINT VINCENT AND THE GRENADINES
+		'WS',   --SAMOA
+		'SM',   --SAN MARINO
+		'ST',   --SAO TOME AND PRINCIPE
+		'SA',   --SAUDI ARABIA
+		'SN',   --SENEGAL
+		'RS',   --SERBIA
+		'SC',   --SEYCHELLES
+		'SL',   --SIERRA LEONE
+		'SG',   --SINGAPORE
+		'SX',   --SINT MAARTEN (DUTCH PART)
+		'SK',   --SLOVAKIA
+		'SI',   --SLOVENIA
+		'SB',   --SOLOMON ISLANDS
+		'SO',   --SOMALIA
+		'ZA',   --SOUTH AFRICA
+		'GS',   --SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS
+		'SS',   --SOUTH SUDAN
+		'ES',   --SPAIN
+		'LK',   --SRI LANKA
+		'SD',   --SUDAN
+		'SR',   --SURINAME
+		'SJ',   --SVALBARD AND JAN MAYEN
+		'SZ',   --SWAZILAND
+		'SE',   --SWEDEN
+		'CH',   --SWITZERLAND
+		'SY',   --SYRIAN ARAB REPUBLIC
+		'TW',   --TAIWAN', PROVINCE OF CHINA
+		'TJ',   --TAJIKISTAN
+		'TZ',   --TANZANIA', UNITED REPUBLIC OF
+		'TH',   --THAILAND
+		'TL',   --TIMOR-LESTE
+		'TG',   --TOGO
+		'TK',   --TOKELAU
+		'TO',   --TONGA
+		'TT',   --TRINIDAD AND TOBAGO
+		'TN',   --TUNISIA
+		'TR',   --TURKEY
+		'TM',   --TURKMENISTAN
+		'TC',   --TURKS AND CAICOS ISLANDS
+		'TV',   --TUVALU
+		'UG',   --UGANDA
+		'UA',   --UKRAINE
+		'AE',   --UNITED ARAB EMIRATES
+		'GB',   --UNITED KINGDOM
+		'US',   --UNITED STATES
+		'UM',   --UNITED STATES MINOR OUTLYING ISLANDS
+		'UY',   --URUGUAY
+		'UZ',   --UZBEKISTAN
+		'VU',   --VANUATU
+		'VE',   --VENEZUELA', BOLIVARIAN REPUBLIC OF
+		'VN',   --VIET NAM
+		'VG',   --VIRGIN ISLANDS', BRITISH
+		'WF',   --WALLIS AND FUTUNA
+		'EH',   --WESTERN SAHARA
+		'YE',   --YEMEN
+		'ZM',   --ZAMBIA
+		'ZW'   --ZIMBABWE        
+        ];
+    END_CONSTANT; 
+    
+    TYPE CodeState = STRING;
+    WHERE 
+        valid : SELF IN states;
+    END_TYPE;
+    
+    TYPE CodeCountry = STRING;
+    WHERE
+        valid : SELF IN countries;
+    END_TYPE;
+    
+    TYPE CodeGender = ENUMERATION OF (Male, Female);
+    END_TYPE;
+    
+    TYPE CodeStatusMarital = ENUMERATION OF (Married, Single, Unkn);
+    END_TYPE;
+    
+    TYPE CodeTypeAddress = ENUMERATION OF (Billing, Business, Home, Mailing, Other);
+    END_TYPE; 
+    
+    TYPE CodeTypePhone = ENUMERATION OF (Home, Work, Mobile, Other);
+    END_TYPE;
+    
+    TYPE CodeTypeRelationParty = ENUMERATION OF (
+        Parent,
+        Child,
+        Sibling,
+        Spouse,
+        Employee,
+        Employer,
+        Doctor,
+        Patient,
+        Attorney,
+        Client,
+        Insurer,
+        Insured,
+        PrimaryContact
+        );
+    END_TYPE;
+    
+    TYPE TaxId = STRING;
+    END_TYPE;
+    
+    TYPE Email = STRING;
+    END_TYPE;
+    
+    TYPE NumberPhone = STRING;
+    END_TYPE;
+
+    (*                                                                       *)
+    (*  Party                                                                *)
+    (*                                                                       *)
+    
+    (* a party is either a person or organization.                           *)
+    ENTITY Party ABSTRACT SUBTYPE OF (ObjectInsurance);
+        taxId : TaxId;
+        email : Email;
+    END_ENTITY;
+    
+    (* a person                                                              *)
+    ENTITY Person SUBTYPE OF (Party);
+        nameFirst : STRING;
+        nameMiddle : STRING;
+        nameLast : STRING;
+        suffix : STRING;
+        prefix : STRING;
+        gender : CodeGender;
+        dateBirth : Date;
+        statusMarital : CodeStatusMarital;
+    DERIVE
+        age : INTEGER := CalculateAge(dateBirth);
+    WHERE
+        non_negative : age >= 0;
+    END_ENTITY;
+    
+    FUNCTION CalculateAge(dateBirth : Date) : INTEGER;
+        ;
+        (* This function calculates the age given the current date.          *)
+    END_FUNCTION;
+    
+    (* an organization                                                       *)
+    ENTITY Organization SUBTYPE OF (Party);
+        name : STRING;
+    END_ENTITY;
+    
+    (* party relationship                                                    *)
+    (* this relationship can be read as: the primary party has the           *)
+    (* relationship with the secondary party                                 *)
+    ENTITY RelationParty SUBTYPE OF (ObjectEffectivity);
+        typeRelationParty : CodeTypeRelationParty;
+        typeRelationPartyInverse : CodeTypeRelationParty;
+        primary : Party;
+        secondary : Party;
+    END_ENTITY;
+    
+    (* address                                                               *)
+    ENTITY Address;
+        addressLine1 : STRING;
+        addressLine2 : STRING;
+        addressLine3 : STRING;
+        city         : STRING;
+        state        : CodeState;
+        county       : OPTIONAL STRING;
+        codePostal   : OPTIONAL STRING;
+        country      : CodeCountry;
+    END_ENTITY;
+    
+    (* link between addresses and parties                                    *)
+    ENTITY PartyAddress SUBTYPE OF (ObjectInsurance);
+        typeAddress : CodeTypeAddress;
+        address : Address;
+        party : Party;
+        primary : BOOLEAN; -- true if the address is the primary address
+    END_ENTITY;
+
+    (* phone number                                                          *)
+    ENTITY Telephone;
+        party : Party;
+        typePhone : CodeTypePhone;
+        numberPhone : NumberPhone;
+    END_ENTITY;
+
+    (* a user is an employee of the insurer                                  *)
+    ENTITY User SUBTYPE OF (Person);
+        idUser : STRING;
+        password : STRING;
+    END_ENTITY;
+
+    (*                                                                       *)
+    (*  Groups                                                               *)
+    (*                                                                       *)
+    
+    (* a group is a hierarchical division of an insurer                      *)
+    ENTITY Group SUBTYPE Of (ObjectInsurance);
+        name : STRING;
+    END_ENTITY;
+    
+    (* a top level group is associated with an insurer                       *)
+    ENTITY GroupTop SUBTYPE OF (Group);
+        insurer : Organization;
+    END_ENTITY;
+    
+    (* a subgroup is part of a higher level group                            *)
+    ENTITY Subgroup SUBTYPE OF (Group);
+        parent : Group;
+    END_ENTITY;
+    
+    (* GroupUser is a link between a user and a group                        *)
+    ENTITY GroupUser SUBTYPE OF (ObjectInsurance);
+        group : Group;
+        user : User;
+    END_ENTITY;
+    
+END_SCHEMA;
+

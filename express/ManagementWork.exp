@@ -1,0 +1,143 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2014, 2016 Waysys LLC                                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 08-Mar-2014         File created                   WAS                    *)
+(* 07-Feb-2016         Added notes                    WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* This schema represents data for managing activities.                      *)
+SCHEMA ManagementWork;
+    USE FROM Common (ObjectInsurance, ObjectLink);
+    USE FROM DateTime (Timestamp);
+    USE FROM Party (User);
+    
+    TYPE IdNote = INTEGER;
+    WHERE
+        range : SELF > 0;
+    END_TYPE;
+    
+    TYPE IdActivity = INTEGER;
+    WHERE
+        range : SELF > 0;
+    END_TYPE;    
+    
+    TYPE CodeClassificationActivity = ENUMERATION OF (
+        Event,
+        Task,
+        Approval,
+        Reminder,
+        Request,
+        TicketSupportCustomer
+    );
+    END_TYPE;
+    
+    TYPE CodePriority = ENUMERATION OF (
+        High,
+        Medium,
+        Low
+    );
+    END_TYPE;
+    
+    TYPE CodeStatusActivity = ENUMERATION OF (
+        Active,
+        Completed,
+        Rejected,
+        Approved,
+        Inactive
+    );
+    END_TYPE;
+
+    TYPE CodeTopic = ENUMERATION OF (
+        General,
+        Coverage,
+        Litigation,
+        Salvage,
+        Settlement,
+        Underwriting,
+        Billing,
+        Disbursement,
+        Delinquecy,
+        Subrogation,
+        Error,
+        Miscellaneous,
+        Unknwn
+        );
+    END_TYPE;
+    
+    TYPE CodeSecurity = ENUMERATION OF (
+        Public,
+        Sensitive,
+        Private,
+        Medical
+    );
+    END_TYPE;   
+    
+    (*                                                                       *)
+    (* Activity                                                              *)
+    (*                                                                       *)
+
+    (* Type of activity                                                      *)
+    ENTITY TypeActivity;
+        name : String;
+        classification : CodeClassificationActivity;
+        daysEscalation : INTEGER;
+        hoursEscalatioin : INTEGER;
+        daysAction : INTEGER;
+        hoursAction : INTEGER;
+        priority : CodePriority;
+    UNIQUE
+        primaryKey : name;     
+    WHERE
+        positive_days  : daysEscalation   > 0;
+        positive_hours : hoursEscalatioin > 0;
+    END_ENTITY;
+
+    (* An activity is an assignment of a task to a user for some action.     *)
+    ENTITY Activity SUBTYPE OF (ObjectInsurance);
+        idActivity : IdActivity;
+        typeActivity : TypeActivity;
+        subject : String;
+        timeEscalation : TimeStamp;
+        timeAction : TimeStamp;
+        timeFinished : OPTIONAL TimeStamp;
+        status : CodeStatusActivity;
+        assignee : User;
+        assigner : User;
+        refersTo : ObjectInsurance;
+    UNIQUE
+        primaryKey : idActivity;
+    END_ENTITY;
+
+    (*                                                                       *)
+    (* Notes                                                                 *)
+    (*                                                                       *)    
+    
+    (* A note is a comment applied to any of the entities                    *)
+    ENTITY Note SUBTYPE OF (ObjectInsurance);
+        idNote : IdNote;
+        codeTopic : CodeTopic;
+        codeSecurity : CodeSecurity;
+        subject : STRING;
+        body : STRING;
+        author : User;
+    UNIQUE
+        primaryKey : idNote;
+    END_ENTITY;
+    
+    (* A note for an activity relates notes to activities.                   *)
+    ENTITY NoteActivity SUBTYPE OF (ObjectLink);
+        note : Note;
+        activity : Activity;
+    UNIQUE
+        primaryKey : note, activity;
+    END_ENTITY;  
+    
+END_SCHEMA;

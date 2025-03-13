@@ -1,0 +1,87 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013, 2014 CastleBay Consulting Corporation                 *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(* 16-Mar-2014         Changed Payment to             WAS                    *)
+(*                     Disbursement                                          *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The financial schema describes financial transactions                     *)
+
+SCHEMA FinancialClaim;
+    USE FROM Common (ObjectInsurance, Money);
+    USE FROM DateTime (Date);
+    USE FROM Claim (Exposure);
+    USE FROM Party (Party, Address);
+    USE FROM Accounting (Transaction);
+    USE FROM InstrumentFinancial (InstrumentFinancial);
+    
+    TYPE CodeTypeCost = ENUMERATION OF (
+        ClaimCost,
+        LoassAdjustmentExpense
+        );
+    END_TYPE;
+            
+    TYPE CodeTypePayment = ENUMERATION OF (
+        Partial,
+        Final,
+        Supplement
+        );
+    END_TYPE;
+
+    TYPE CodeTypeRecovery = ENUMERATION OF (
+        Salvage,
+        Subrogation,
+        LAE,
+        Miscellaneous
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeReserve = ENUMERATION OF (
+        ReserveCase,
+        ReserveFactor
+        );
+    END_TYPE;
+
+    (*-----------------------------------------------------------------------*)
+    (*  Transaction Subtypes                                                 *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* The reserve line is used to group transactions with a particular      *)
+    (* exposure and cost type.                                               *)
+    ENTITY LineReserve SUBTYPE OF (ObjectInsurance);
+        exposure : Exposure;
+        typeCost : CodeTypeCost;
+    END_ENTITY;
+    
+    ENTITY TransactionClaim SUBTYPE OF (Transaction);
+        lineReserve : LineReserve;
+    END_ENTITY;
+    
+    (* A disbursement is a payment made to an outside party                  *)
+    ENTITY Disbursement SUBTYPE OF (TransactionClaim);
+        instrumentFinancial : InstrumentFinancial;
+        codeTypePayment : CodeTypePayment;
+    END_ENTITY;
+    
+    (* A Reserve                                                             *)
+    ENTITY Reserve SUBTYPE OF (TransactionClaim);
+        codeTypeReserve : CodeTypeReserve;
+    END_ENTITY;
+
+    (* A Recovery                                                            *)
+    ENTITY Recovery SUBTYPE OF (TransactionClaim);
+        codeTypeRecovery : CodeTypeRecovery;
+        instrumentFinancial : InstrumentFinancial;
+    END_ENTITY;
+    
+END_SCHEMA;
+

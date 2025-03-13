@@ -1,0 +1,264 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The Product Model describes the lines of business, products, and coverages*)
+(* written by the company.                                                   *)
+(*                                                                           *)
+(* An Invariant entity is one that does not change except for its effectivity*)
+
+SCHEMA ProductModel; 
+	USE FROM Common (ObjectEffectivity, ObjectInsurance);
+	USE FROM Party (CodeState);
+	REFERENCE FROM Party (states);  
+
+    (* These codes are drawn from Uniform Property and Casualty Coding Matrix*)
+	TYPE CodeLineBusiness = ENUMERATION OF (
+		PersonalAuto, 
+		CommercialAuto,
+		Property);
+	END_TYPE;
+	
+	TYPE CodeProduct = ENUMERATION OF (
+	   PersonalAuto,
+	   CommercialAuto,
+	   Property);
+    END_TYPE;
+    
+    TYPE CodeProgram = ENUMERATION OF (
+        Premium,
+        Standard,
+        NonStandard
+        );
+    END_TYPE;
+    
+    TYPE CodeCoverage = ENUMERATION OF (
+        Collision,
+        Comprehensive,
+        BodilyInsurance,
+        PropertyDamage,
+        UninsuredMotorist,
+        PIP
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeFeeDiscount = EXTENSIBLE ENUMERATION OF (
+        FeePolicy,
+        TaxState,
+        DiscountAntiLockBrakes,
+        DiscountAntiTheft,
+        DiscountSafety,
+        DiscountMultiCar,
+        DiscountMultiPolicy,
+        DiscountGoodDriver
+        );
+    END_TYPE;
+    
+    TYPE CodeFeeDiscount = ENUMERATION OF (
+        Fee,
+        Discount
+    );
+    END_TYPE;
+    
+    TYPE CodeTypeAttribute = ENUMERATION OF (
+        PerClaim,
+        PerOccurrence,
+        NotApplicable
+        );
+    END_TYPE;
+        
+    TYPE CodeTypeEndorsement = EXTENSIBLE ENUMERATION OF (
+        ExcludeFederalUse,
+        ExcludeCustomEquipment
+        );
+    END_TYPE;
+    
+    TYPE CodeCategoryQuestion = EXTENSIBLE ENUMERATION OF (
+        Driver,
+        Vehicle,
+        General
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeAnswer = EXTENSIBLE ENUMERATION OF (
+        ANumber,
+        AString,
+        YesNo
+        );
+    END_TYPE;
+    
+    TYPE ValueAttributeString = STRING;
+    END_TYPE;
+    
+    TYPE ValueAttributeInteger = INTEGER;
+    END_TYPE;
+    
+    TYPE ValueAttribute = SELECT (ValueAttributeString, ValueAttributeInteger);
+    END_TYPE;
+
+    (*                                                                       *)
+    (* Products                                                              *)
+    (*                                                                       *)
+    
+    (* A general class of insurance products                                 *)
+    (* This is an invariant entity                                           *)                                        
+    ENTITY LineBusiness SUBTYPE OF (ObjectInsurance);
+        codeLineBusiness : CodeLineBusiness;
+        description : STRING;
+    INVERSE
+        products : SET[0:?] OF Product FOR lineBusiness;
+    UNIQUE
+        unique_line : codeLineBusiness;        
+    END_ENTITY;
+    
+    (* A type of insurance policy offered by the company                     *)
+    (* This is an invariant entity                                           *)
+    ENTITY Product SUBTYPE OF (ObjectEffectivity);
+        codeProduct : CodeProduct;
+        lineBusiness : LineBusiness;
+        description : STRING;
+    UNIQUE
+        unique_product : codeProduct, effectivity;
+    END_ENTITY;
+    
+    (* An option or configuration of an insurance product                    *)
+    (* This is an invariant object                                           *)
+    ENTITY Program SUBTYPE OF (ObjectInsurance);
+        codeProgram : CodeProgram;
+        description : STRING;
+    UNIQUE
+        unique_program : codeProgram;
+    END_ENTITY;
+
+    (* Link between coverage, program, and product                            *)
+    ENTITY CoverageProductProgram SUBTYPE OF (ObjectEffectivity);
+        coverage : TypeCoverage;
+        product  : Product;
+        program  : Program;
+        state    : CodeState;
+    UNIQUE
+        unique_product_combination : coverage, product, program, state, effectivity;
+    WHERE
+        valid_state : state IN states + ['ALL'];
+    END_ENTITY;
+    
+    (*                                                                       *)
+    (* Coverage Types                                                        *)
+    (*                                                                       *)
+    
+    (* A coverage definition                                                 *)
+    (* This is an invariant object                                           *)
+    ENTITY TypeCoverage SUBTYPE OF (ObjectEffectivity);
+        codeCoverage : CodeCoverage;
+        lineBusiness : LineBusiness;
+    INVERSE
+        has_attributes : SET[0:?] OF TypeAttributeCoverage FOR coverage;
+    UNIQUE 
+        unique_coverage : codeCoverage, effectivity;
+    END_ENTITY;
+    
+    (* An attribute of the coverage type                                     *)
+    (* This is an invariant object                                           *)
+    ENTITY TypeAttributeCoverage SUBTYPE OF (ObjectInsurance);
+        coverage : TypeCoverage;
+        order : INTEGER;  -- order to be displayed
+        attributeType : CodeTypeAttribute;
+        valueAttribute : ValueAttribute;
+    UNIQUE
+        -- each attribute type has a unique value for the coverage
+        unique_attribute : coverage, valueAttribute; 
+        -- each attrigute type has a unique order for the coverage
+        unique_order : coverage, order;           
+    WHERE
+        positive_order : order > 0;
+    END_ENTITY;
+    
+    (* Coverage deductible type                                              *)
+    ENTITY TypeDeductible SUBTYPE OF (TypeAttributeCoverage);
+    END_ENTITY;
+
+    (* Coverage limit type                                                   *)
+    ENTITY TypeLimit SUBTYPE OF (TypeAttributeCoverage);
+    END_ENTITY;
+    
+    (*                                                                       *)
+    (* Charges and discounts                                                 *)
+    (*                                                                       *)
+    
+    (* Policy charges are fees and disccounts that are applied to policies   *)
+    ENTITY TypeChargePolicy SUBTYPE OF (ObjectInsurance);
+        feeDiscount     : CodeFeeDiscount;
+        typeFeeDiscount : CodeTypeFeeDiscount;
+    END_ENTITY;
+        
+    (* ChargeProgramProduct is a link of charges to programs, products, and  *)
+    (* states                                                                *)
+    ENTITY ChargeProgramProduct SUBTYPE OF (ObjectEffectivity);
+        typeCharge : TypeChargePolicy;
+        product : Product;
+        program : Program;
+        state : CodeState;
+    UNIQUE
+        unique_product_combination : typeCharge, product, program, state, effectivity;
+    WHERE
+        valid_state : state IN states + ['ALL'];        
+    END_ENTITY;
+    
+    (*                                                                       *)
+    (* Endorsements                                                          *)
+    (*                                                                       *)
+    
+    (* Endorsements are modifications to policy language not affecting the   *)
+    (* the premium                                                           *)
+    ENTITY TypeEndorsement SUBTYPE OF (ObjectInsurance);
+        codeTypeEndorsement : CodeTypeEndorsement;
+    END_ENTITY;
+    
+    (* EndorsementProgramProduct is a link of endorsements types to programs *)
+    (* and products                                                          *)
+    ENTITY EndorsementProgramProduct SUBTYPE OF (ObjectEffectivity);
+        typeEndorsement : TypeEndorsement;
+        product : Product;
+        program : Program;
+        state : CodeState;
+    UNIQUE
+        unique_product_combination : typeEndorsement, product, program, state, effectivity;   
+    WHERE
+        valid_state : state IN states + ['ALL'];        
+    END_ENTITY;
+    
+    (* Underwriting questions                                                *)
+    
+    (* Underwriting questions are questions about the prospective insured,   *)
+    (* the answers to which are used in underwriting.                        *)
+    ENTITY QuestionUnderwriting SUBTYPE OF (ObjectInsurance);
+        question : STRING;
+        category : CodeCategoryQuestion;
+        typeAnswer : CodeTypeAnswer;
+    END_ENTITY;
+    
+    (* QuestionProgramProduct relates an underwriting question to a          *)
+    (* combination of the program and the product and state                  *)
+    ENTITY QuestionProgramProduct SUBTYPE OF (ObjectEffectivity);
+        question : QuestionUnderwriting;
+        product : Product;
+        program : Program;
+        state : CodeState;
+    UNIQUE
+        unique_product_combination : question, product, program, state, effectivity;   
+    WHERE
+        valid_state : state IN states + ['ALL'];                    
+    END_ENTITY;
+    
+END_SCHEMA;
+

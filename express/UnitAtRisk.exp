@@ -1,0 +1,85 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* A Unit At Risk is an object that is insured against loss                  *)
+SCHEMA UnitAtRisk;
+    USE FROM Common   (ObjectInsurance, Money);
+    USE FROM DateTime (Year);
+    USE FROM Party    (Address, CodeState);
+    
+    TYPE VIN = STRING;
+    END_TYPE;
+    
+    TYPE SymbolVehicle = STRING;
+    END_TYPE;
+    
+    TYPE CodeTypeVehicle = EXTENSIBLE ENUMERATION OF (
+        PrivatePassenger,
+        Truck,
+        GolfCart,
+        ClassicAuto,
+        AntiqueAuto,
+        RecreationalVehicle,
+        MotorCycle,
+        Other
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeBody = EXTENSIBLE ENUMERATION OF (
+        Convertible,
+        Sedan,
+        Coup,
+        Pickup,
+        SUV,
+        StationWagon
+        );
+    END_TYPE;
+    
+    (* A location is a physical address used to locate a unit at risk for    *)
+    (* underwriting purposes.                                                *)
+    ENTITY Location SUBTYPE OF (Address);
+        latitude : NUMBER;
+        longitude : NUMBER;
+    END_ENTITY;
+    
+    
+    (* a unit at risk is anything that can be insured against loss           *)
+    (* This class will have a number of subclasses, not all listed here.     *)
+    ENTITY UnitAtRisk SUBTYPE OF (ObjectInsurance);
+        numberUnit : INTEGER;
+    WHERE
+        numberUnit > 0;
+    END_ENTITY;
+    
+    (* A vehicle is any motorized machine that can be insured                *)
+    ENTITY Vehicle SUBTYPE OF (UnitAtRisk);
+        codeTypeVehicle : CodeTypeVehicle;
+        codeTypeBody : CodeTypeBody;
+        make : STRING;
+        modelVehicle : STRING;
+        year : Year;
+        vin : VIN;
+        plateLicense : STRING;
+        color : STRING;
+        symbol : SymbolVehicle;
+        stateRegistration : CodeState;
+        numberRegistration : STRING;
+        locationGarage : Location;
+        costNew : Money;
+        valueStated : Money;
+        valueCashActual : Money;
+    END_ENTITY;
+
+END_SCHEMA;
+

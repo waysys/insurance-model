@@ -1,0 +1,127 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2016 Waysys LLC                                             *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 07-Feb-2016         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The DateTime schema specifies date, time, and related types.  These are   *)
+(* created as entities even though they should not be tables themselves.     *)
+(* These are created since EXPRESS has no date and time native types.        *)
+SCHEMA DateTime;
+    CONSTANT
+       MaxYear : Year := 4000;
+       MinYear : Year := 1601;
+       MaxDate : Date := Date(MaxYear, 12, 31);  
+    END_CONSTANT;
+
+    TYPE Year = INTEGER;
+    WHERE
+        range : (SELF >= MinYear) And (SELF <= MaxYear);
+    END_TYPE;
+    
+    TYPE Month = INTEGER;
+    WHERE
+        range : (SELF >= 1) And (SELF <= 12);
+    END_TYPE;
+    
+    TYPE Day = INTEGER;
+    WHERE
+        range : (SELF >= 1) And (SELF <= 31);
+    END_TYPE;
+    
+    TYPE Hour = INTEGER;
+    WHERE 
+        range : (SELF >= 0) And (SELF < 24);
+    END_TYPE;
+    
+    TYPE Minute = INTEGER;
+    WHERE
+        range : (SELF >= 0) And (SELF < 60);
+    END_TYPE;
+    
+    TYPE Second = INTEGER;
+    WHERE
+        range : (SELF >= 0) And (SELF < 60);
+    END_TYPE;
+    
+    TYPE Millisecond = INTEGER;
+    WHERE
+        range : (SELF >= 0) And (SELF < 1000);
+    END_TYPE;
+    
+    TYPE CodeDuration = ENUMERATION OF (
+        Annual,
+        SemiAnnual,
+        Quarterly,
+        Monthly,
+        SemiMonthly,
+        Weekly,
+        Daily,
+        NotApplicable        
+    );
+    END_TYPE; 
+    
+    (*                                                                       *)
+    (* Date                                                                  *)
+    (*                                                                       *)    
+        
+    ENTITY Date;
+        year : Year;
+        month : Month;
+        day : Day;
+    END_ENTITY;
+    
+    ENTITY Time;
+        hour : Hour;
+        minute : Minute;
+        second : Second;
+    END_ENTITY;
+    
+    ENTITY Timestamp;
+        date : Date;
+        time : Time;
+    END_ENTITY;
+    
+    ENTITY RangeDate;
+        dateEffective : Date;
+        dateExpiration : Date;
+    WHERE
+        Not after(dateEffective, dateExpiration);
+    END_ENTITY;
+    
+    (* Return true if the first date is after the second date                 *)
+    FUNCTION after(dateEffective, dateExpiration : Date) : BOOLEAN;
+        LOCAL
+            result : BOOLEAN := FALSE;
+        END_LOCAL;
+        
+        IF dateEffective.year > dateExpiration.year 
+        THEN 
+            result := TRUE;
+        END_IF;
+        
+        IF (dateEffective.year = dateExpiration.year) And (dateEffective.month > dateExpiration.month)
+        THEN
+            result := TRUE; 
+        END_IF;
+        
+        IF  (dateEffective.year = dateExpiration.year) And 
+            (dateEffective.month = dateExpiration.month) And
+            (dateEffective.day > dateExpiration.day)
+        THEN
+            result := TRUE;
+        END_IF;
+        
+        RETURN(result);
+    END_FUNCTION;
+ 
+END_SCHEMA;
+

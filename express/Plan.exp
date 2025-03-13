@@ -1,0 +1,175 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2014 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 08-Mar-2014         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* This schema defines a set of plans. A plan defines information about the  *)
+(* the timing of financial transactions.                                     *)
+SCHEMA Plan;
+    USE FROM Common (ObjectInsurance, ObjectEffectivity, Money, Percent);
+    USE FROM DateTime (Date, Day);
+    USE FROM Account (AccountProducer);
+    USE FROM Accounting(Frequency);
+    USE FROM ProductModel (Product);
+
+    TYPE DaysTerm = INTEGER;
+    WHERE
+        range : (SELF >= 0) And (SELF <= 60);
+    END_TYPE;    
+    
+    TYPE CodeTimingPayment = ENUMERATION OF (
+        Billing,
+        Binding,
+        Custom,
+        EffectiveDate,
+        ExpirationDate,
+        FirstPayment,
+        Payment
+        );
+    END_TYPE;
+        
+    (* This enumeration identifies the various types of plans                *)
+    TYPE CodePlanType = ENUMERATION OF (
+        DisbursementSingle,
+        DisbursementRepeated,
+        BillingAgency,
+        BillingDirect,
+        Commission,
+        Payment,
+        Delinquent
+    );
+    END_TYPE;
+    
+    (* This code helps determine the day of the month when the cycle closes. *)
+    TYPE CodeSelectionCycle = ENUMERATION OF (
+       Exact,  (* bill on the exact day of month provided                    *)
+       MonthFirst, (* bill on first business day of month                    *)
+       MonthLast,  (* bill on last day of month                              *)
+       DayBusinessBefore,(*  last business day on or before the specified day*)
+       DayBusinessAfter  (* earlierst business day on or after the specified *)
+                         (* day                                              *)
+    );
+    END_TYPE;
+    
+    (* This code represents how line items are agregated on the invoice      *)
+    TYPE CodeAggregation = ENUMERATION OF (
+        Policy,
+        Charge
+    );
+    END_TYPE;
+    
+    (* This code indicates when the first installment of a payment is to be  *)
+    (* made.                                                                 *)
+    TYPE CodeTimingInstallment = ENUMERATION OF (
+        Instruction,
+        Policy
+    );
+    END_TYPE;
+        
+    (*-----------------------------------------------------------------------*)
+    (*  Plans                                                                *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* This entity is the parent class of specific plans.                    *)
+    ENTITY Plan SUBTYPE OF (ObjectEffectivity);
+        name     : String;
+        typePlan : CodePlanType;       
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*)
+    (*  Billing Plan                                                         *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* A billing plan describes how a policy is going to be billed.          *)
+    ENTITY PlanBilling SUBTYPE OF (Plan);
+        aggregation       : CodeAggregation;
+        dayMonthCycleEnd  : Day; 
+        daysStatementSend : DaysTerm; 
+           (* days after cycle close to send statement                       *)
+        daysPaymentDue   : DaysTerm;
+           (* days after cycle close when payment due *)
+        daysDunning1Send  : DaysTerm;
+           (* days after cycle close to send first dunning letter if payment *)
+           (* not received                                                   *)
+        daysDunning2Send  : Daysterm;
+           (* days after cycle close to send second dunning letter if        *)
+           (* payment not received                                           *) 
+        selectionCycle    : CodeSelectionCycle;
+        disbursementMinimum : Money;
+            (* do not do automatic disbursement if amount is less that this  *)
+            (* value.                                                        *)
+    WHERE
+        bill_type : (typePlan = BillingAgency) or (typePlan = BillingDirect); 
+        interval_positive : daysPaymentDue  >= 0;   
+    END_ENTITY;
+    
+    (*-----------------------------------------------------------------------*)
+    (* Commission Plan                                                       *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* Commission plan defines the details of commission payment             *)
+    ENTITY PlanCommission SUBTYPE OF (Plan);
+    WHERE
+        bill_type : typePlan = Commission;
+    END_ENTITY;
+    
+    (* Commission subplan describes parts of the commission plan             *)
+    ENTITY SubplanCommissionDefault SUBTYPE OF (ObjectInsurance);
+        name : STRING;
+        planCommission : PlanCommission;
+        codeTimingPayment : CodeTimingPayment;
+        rateBase : PerCent;
+        threshold : Money;
+        rateBonus : PerCent;
+    WHERE
+        base_positive : rateBase > 0;
+        threshold_positive : threshold >= 0.00;
+        bonus_non_negative : rateBonus >= 0;
+    END_ENTITY;
+    
+    (* A conditional subplan applies when a condition is met.                *)
+    (* This entity needs to be expanded based on carrier requirements        *)
+    ENTITY SubplanCommissionConditional SUBTYPE OF (SubplanCommissionDefault);
+        product : Product;
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*)
+    (* Payment Plan                                                          *)
+    (*-----------------------------------------------------------------------*)
+
+    (* A payment plan determines how a policy holder pays for a policy       *)
+    ENTITY PlanPayment SUBTYPE OF (Plan);
+        percentDownpayment     : Percent;
+        numberInstallments     : INTEGER;
+        periodicityInstallment : Frequency;
+        feeInstallment         : Money;
+        timingInstallment      : CodeTimingInstallment;
+        daysToInstallment      : Day;
+    WHERE   
+        bill_type : typePlan = Payment; 
+    END_ENTITY;     
+
+    (*-----------------------------------------------------------------------*)
+    (* Delinquency Plan                                                      *)
+    (*-----------------------------------------------------------------------*)
+
+    (* A delinquency plan determines how actions are taken for delinquent    *)
+    (* accounts.                                                             *)
+    ENTITY PlanDelinquent SUBTYPE OF (Plan);
+        daysPastDueAllowed : Day;
+        pastDueMinimum : Money;
+    WHERE   
+        bill_type : typePlan = Delinquent;     
+    END_ENTITY;
+        
+END_SCHEMA;
+

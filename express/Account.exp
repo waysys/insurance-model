@@ -1,0 +1,95 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2014 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 14-Mar-2014         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* An account relates a party to policies, invoices, and payments            *)
+SCHEMA Account;
+    USE FROM Common   (ObjectInsurance);
+    USE FROM Party    (Party);
+    USE FROM Policy   (Policy);
+    USE FROM Plan     (PlanBilling);
+
+    CONSTANT
+        LengthNumberAccount : INTEGER := 8;
+    END_CONSTANT;
+
+    TYPE NumberAccount = STRING;
+    WHERE
+        LENGTH(SELF) = LengthNumberAccount;
+    END_TYPE;
+
+    TYPE CodeTypeAccount = ENUMERATION OF (
+        PolicyHolder,
+        Vendor,
+        Producer,
+        Company,
+        Other
+    );
+    END_TYPE;
+    
+    TYPE CodeTypeAgencyBill = ENUMERATION OF (
+        Statement,
+        AccountCurrent
+        );
+    END_TYPE;
+
+    (*                                                                       *)
+    (* Accounts                                                              *)
+    (*                                                                       *)
+        
+    (* An account relates a grouping of policies, invoices, or other entity  *)
+    (* controlled to a party                                                 *)
+    ENTITY Account ABSTRACT SUBTYPE OF (ObjectInsurance);
+        numberAccount : NumberAccount;
+        holderAccount : Party;
+        typeAccount   : CodeTypeAccount;
+        planBilling   : PlanBilling;
+    UNIQUE
+        identifier : numberAccount;
+    END_ENTITY;
+
+    (* A policy holder account owns policies                                 *)
+    ENTITY AccountHolderPolicy SUBTYPE OF (Account);
+    INVERSE
+        has_policies : SET[0:?] OF Policy FOR account; 
+    WHERE
+        type_account : typeAccount = PolicyHolder;   
+    END_ENTITY;
+    
+    (* A producer account relates payments and invoices to producters        *)
+    ENTITY AccountProducer SUBTYPE OF (Account);
+        typeAgencyBill : CodeTypeAgencyBill;
+    WHERE
+        type_account : typeAccount = Producer;    
+    END_ENTITY;    
+
+    (* A vendor account relates payments and invoices to a vendor            *)
+    ENTITY AccountVendor SUBTYPE OF (Account);
+    WHERE
+        type_account : typeAccount = Vendor;    
+    END_ENTITY;
+    
+    (* A company account relates payments and line items to the carrier.     *)
+    ENTITY AccountCompany SUBTYPE OF (Account);
+    WHERE
+        type_account : typeAccount = Company;
+    END_ENTITY;
+    
+    (* An other account relates payments and invoices to other parties       *)
+    ENTITY AccountOther SUBTYPE OF (Account);
+    WHERE
+        type_account : typeAccount = Other;      
+    END_ENTITY;
+        
+END_SCHEMA;
+

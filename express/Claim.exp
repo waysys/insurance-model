@@ -1,0 +1,223 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 07-Sep-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The Claim schema describes claims                                         *)
+
+SCHEMA Claim;
+    USE FROM Common (ObjectInsurance, ObjectEffectivity, Money);
+    USE FROM DateTime (Date);
+    USE FROM Party (Party, Person, User);
+    USE FROM Policy (VersionPolicy, Coverage);
+    USE FROM UnitAtRisk (Vehicle);
+
+    TYPE NumberClaim = STRING;
+    WHERE
+        number_length : LENGTH(SELF) = 14;
+    END_TYPE;
+    
+    TYPE CodeCauseLoss = EXTENSIBLE ENUMERATION OF (
+        FallingObject,
+        Abandonment,
+        CollisionBike,
+        CollisionAuto,
+        BrokenGlass,
+        Death,
+        Fire,
+        Hail,
+        Wind,
+        Lightening
+        );
+    END_TYPE;
+    
+    TYPE CodeOutcomeClose = ENUMERATION OF (
+        Completed,
+        Duplicate,
+        Withdrawn,
+        Mistake,
+        Fraud
+        );
+    END_TYPE;
+    
+    TYPE CodeStatus = ENUMERATION OF (
+        Open,
+        Close,
+        Reopened
+        );
+    END_TYPE;
+    
+    TYPE CodeRoleClaim = ENUMERATION OF (
+        Claimant,
+        Insured,
+        Agent,
+        Payee,
+        InjuredParty,
+        LienHolder,
+        Reporter,
+        Adjuster,
+        Witness,
+        Assessor
+        );
+    END_TYPE;
+    
+    TYPE CodeSeverity = ENUMERATION OF (
+        Minor,
+        Moderate,
+        Major,
+        Fatal
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeInjury = EXTENSIBLE ENUMERATION OF (
+        NoInjury,
+        Amputation,
+        Burn,
+        Concussion,
+        Crushing,
+        Dislocation,
+        ElectricShock,
+        Fracture,
+        Freezing,
+        HeatProstration,
+        Infection,
+        Laceration,
+        Poison,
+        Puncture,
+        Rupture,
+        Sprain,
+        MentalStress,
+        Cancer,
+        CarpalTunnelSyndrome
+    );
+    END_TYPE;
+    
+    TYPE CodeTypeTreatment = EXTENSIBLE ENUMERATION OF (
+        Chiropractor,
+        Counseling,
+        EmergencyCare,
+        EmergencyRoom,
+        Hospital,
+        Injection,
+        MajorSurgery,
+        MinorSurgery,
+        MRI,
+        None,
+        Xray,
+        Other,
+        Rehab,
+        Doctor
+        );
+    END_TYPE;
+    
+    TYPE CodeTypeBodyPart = EXTENSIBLE ENUMERATION OF (
+        Head,
+        Upper,
+        Lower,
+        Neck
+        );
+    END_TYPE;
+    
+    (*                                                                       *)
+    (* Claims                                                                *)
+    (*                                                                       *)
+
+    (* The Claim entity describes a claim                                    *)
+    ENTITY Claim SUBTYPE OF (ObjectInsurance);
+        numberClaim : NumberClaim;
+        policy : VersionPolicy;
+        dateLoss : Date;
+        codeCauseLoss : CodeCauseLoss;
+        codeStatus : CodeStatus;
+        codeOutcomeCloase : OPTIONAL CodeOutcomeClose;
+        dateClose : OPTIONAL Date;
+        dateReopened : OPTIONAL Date;
+        catastophe : OPTIONAL catastrophe;
+    UNIQUE
+        identifier : numberClaim;
+    END_ENTITY;
+    
+    (* ClaimParty entity links parties to claims                             *)
+    ENTITY ClaimParty SUBTYPE OF (ObjectInsurance);
+        codeRole : CodeRoleClaim;
+        party : Party;
+        claim : Claim;
+    END_ENTITY;
+    
+    (* Incident describes the circumstances of an event resulting in a cliam.*)
+    (* Incident can have many subclasses, not all listed here.               *)
+    ENTITY Incident SUBTYPE OF (ObjectInsurance);
+        codeSeverity : CodeSeverity;
+        lossEstimate : Money;
+        dateEvent : Date;
+    END_ENTITY;
+    
+    (* Vehicle incident is an incident involving a vehicle                   *)
+    ENTITY IncidentVehicle SUBTYPE OF (Incident);
+    	vehicleInvolved : Vehicle;
+    END_ENTITY;
+    
+    (* Injury incident is an incident involving a person being injured       *)
+    ENTITY IncidentInjury SUBTYPE OF (Incident);
+ 
+    END_ENTITY;
+    
+    (* InjuryTreatment relates an injury, body part, and treatment to an     *)
+    (* injury incident                                                       *)
+    ENTITY InjuryTreatement SUBTYPE OF (ObjectInsurance); 
+       incident      : IncidentInjury;
+       injury        : Injury;  
+       treatment     : Treatment;
+       bodyPart      : BodyPart;  
+       dateTreatment : Date;
+    END_ENTITY;
+    
+    (* An injury describes an injury incurred by the injured party           *)
+    ENTITY Injury SUBTYPE OF (ObjectInsurance);
+        codeTypeInjury : CodeTypeInjury;
+    END_ENTITY;
+    
+    (* A treatment describes a medical treatment for an injury               *)
+    ENTITY Treatment SUBTYPE OF (ObjectInsurance);
+        codeTypeTreatment : CodeTypeTreatment;
+    END_ENTITY;
+    
+    (* A body part describes the injured body part                           *)
+    ENTITY BodyPart SUBTYPE OF (ObjectInsurance);
+        codeTypeBodyPart : CodeTypeBodyPart;
+    END_ENTITY;
+    
+    (* IncidentParty relates parties to the incident                         *)
+    ENTITY IncidentParty SUBTYPE OF (ObjectInsurance);
+        codeRole : CodeRoleClaim;
+    	incident : Incident;
+    	party : Party;
+    END_ENTITY;
+    
+    (* An exposure is the combination of a coverage, incident, and claimant  *)
+    ENTITY Exposure SUBTYPE OF (ObjectInsurance);
+        claim : Claim;
+        claimant : Party;
+        incident : Incident;
+        coverage : Coverage;
+    END_ENTITY;
+    
+    (* A Catastrophe is a named storm, earthquake, or other event.           *)
+    ENTITY Catastrophe SUBTYPE OF (ObjectEffectivity);
+        name : STRING; -- the name of the catastrohpe
+        numberCatastrophe : STRING; -- the catastrophe number
+    UNIQUE
+        unique_name : name;
+    END_ENTITY;
+       
+END_SCHEMA;
+

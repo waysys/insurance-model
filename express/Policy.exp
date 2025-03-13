@@ -1,0 +1,185 @@
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Copyright (c) 2013 CastleBay Consulting Corporation                       *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+(* Revision History                                                          *)
+(*---------------------------------------------------------------------------*)
+(*                                                                           *)
+(* Date of Revision    Description                    Author    Issue Number *)
+(* ----------------    -----------------------------  ------    ------------ *)
+(* 05-May-2013         File created                   WAS                    *)
+(*                                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* The Policy schema describes policies, coverages, and other instances      *)
+(* of products                                                               *)
+SCHEMA Policy;
+    USE FROM Common (ObjectInsurance, ObjectEffectivity, Money);
+    USE FROM DateTime (Date, Year);
+    USE FROM ProductModel (Product, TypeCoverage, TypeChargePolicy, TypeEndorsement, QuestionUnderwriting);
+    USE FROM Party (Organization, Party, Person, CodeState);
+    USE FROM UnitAtRisk(UnitAtRisk);
+    USE FROM Billing (PlanCommissionProducer);
+    USE FROM Plan (PlanPayment, PlanCommission, PlanBilling, CodePlanType, PlanDelinquent);
+    USE FROM Account (AccountHolderPolicy);
+     
+    CONSTANT
+        LengthNumberPolicy  : INTEGER := 10;
+    END_CONSTANT;
+    
+    TYPE CodeStatusPolicy = ENUMERATION OF (
+        Draft,
+        Quote,
+        InForce,
+        Expired,
+        Cancelled        
+        );
+    END_TYPE;
+
+    TYPE NumberPolicy = STRING;
+    WHERE
+        LENGTH(SELF) = LengthNumberPolicy;
+    END_TYPE;
+    
+    TYPE StringAttribute = STRING;
+    END_TYPE;
+    
+    TYPE IntAttribute = STRING;
+    END_TYPE;
+    
+    TYPE AttributeCoverage = SELECT(StringAttribute, IntAttribute);
+    END_TYPE;
+ 
+    (*-----------------------------------------------------------------------*)
+    (* Policy                                                                *)
+    (*-----------------------------------------------------------------------*) 
+        
+    (* The policy is a container that holds the policy versions.  The        *)
+    (* policy contains those attributs which if changed requires a rewrite.  *)
+    ENTITY Policy SUBTYPE OF (ObjectInsurance);
+        numberPolicy        : NumberPolicy;
+        product             : Product;
+        companyUnderwriting : Organization;
+        account             : AccountHolderPolicy;
+    INVERSE
+        has_versions : SET[1:?] OF VersionPolicy FOR policy;
+    UNIQUE
+        identifier : numberPolicy;
+    END_ENTITY;
+
+    (* The policy version is a variation of the policy.                      *)
+    ENTITY VersionPolicy SUBTYPE OF (ObjectEffectivity);
+        policy            : Policy;
+        codeStatusPolicy  : CodeStatusPolicy;
+        termPolicy        : INTEGER; -- months
+        producerCode      : PlanCommissionProducer;
+        planBilling       : PlanBilling;
+        planPayment       : PlanPayment;
+        planDelinquent    : PlanDelinquent;
+        dateCancellation  : OPTIONAL Date;
+        stateBusiness     : CodeState;
+    UNIQUE
+        identification : policy, effectivity;        
+    WHERE
+        positive : termPolicy > 0;
+        billing_plan : 
+            (planBilling.typePlan = BillingAgency) OR 
+            (planBilling.typePlan = BillingDirect);
+    END_ENTITY;
+    
+    (*-----------------------------------------------------------------------*)
+    (* Policy Components                                                     *)
+    (*-----------------------------------------------------------------------*)
+    
+    (* Chargeable is an item on the policy that affects the premium          *)
+    ENTITY Chargeable SUBTYPE OF (ObjectInsurance);
+        versionPolicy : VersionPolicy;  
+        premiumRate : Money; -- premium per normal term ($/term)
+        premium : Money; -- premium ($) 
+    END_ENTITY;
+    
+    (* A Coverage specifies protection for a unit at risk                    *)
+    ENTITY Coverage SUBTYPE OF (Chargeable);
+        typeCoverage : TypeCoverage;
+        deductible : OPTIONAL AttributeCoverage;
+        limit : OPTIONAL AttributeCoverage;
+    WHERE
+        premium > 0.00;
+        premiumRate > 0.00;
+    END_ENTITY;
+    
+    (* A Risk Unit Coverage is a coverage with a specific unit at risk       *)
+    (* assigned                                                              *)
+    ENTITY CoverageUnitRisk SUBTYPE OF (Coverage);
+        unitAtRisk : UnitAtRisk;
+    UNIQUE
+        unique_coverage : versionPolicy, unitAtRisk, typeCoverage;
+    END_ENTITY;
+    
+    (* A Policy Level Coverage is a coverage assigned to the policy          *)
+    ENTITY CoveragePolicy SUBTYPE OF (Coverage);
+    UNIQUE
+        unique_coverage : versionPolicy, typeCoverage;
+    END_ENTITY;
+    
+    (* Fees are charges that increase the cost of the policy                 *)
+    ENTITY FeeDiscount SUBTYPE OF (Chargeable);
+        typeFeeDiscount : TypeChargePolicy;
+    UNIQUE
+        unique_charge : versionPolicy, typeFeeDiscount;
+    END_ENTITY;
+        
+    (* Endorsements are modifications to the policy with no premium impact   *)
+    ENTITY Endorsement SUBTYPE OF (ObjectInsurance);
+        versionPolicy : VersionPolicy;
+        typeEndorsement : TypeEndorsement;
+    UNIQUE
+        unique_endorsement : versionPolicy, typeEndorsement;
+    END_ENTITY;
+    
+    (* An underwriting answer is the answer to an underwriting question      *)
+    (* applicable to a particular version of the policy.                     *)
+    ENTITY AnswerUnderwriting SUBTYPE OF (ObjectInsurance);
+        versionPolicy : VersionPolicy;
+        question : QuestionUnderwriting;
+        answer : STRING;    
+    END_ENTITY;
+
+    (*-----------------------------------------------------------------------*)
+    (* Party Relationshipes                                                  *)
+    (*-----------------------------------------------------------------------*)
+
+    TYPE RelationPolicy = ENUMERATION OF (
+        Insured,
+        Agent,
+        Driver,
+        AdditionalInsured,
+        AdditionalInterest,
+        BillingContact,
+        NamedInsured,
+        PrimaryInsured
+        );
+    END_TYPE;
+    
+    (* The PolicyParty entity is a link between a policy version and parties *)
+    ENTITY PolicyParty SUBTYPE OF (ObjectEffectivity);
+        party : Party;
+        versionPolicy : VersionPolicy;
+    END_ENTITY;
+    
+    (* A driver is an operator of a vehicle recorded for underwriting        *)
+    (* purposes                                                              *)
+    ENTITY Driver SUBTYPE OF (Person);
+        numberLicenseDriver : STRING;
+        stateLicense        : CodeState;
+        yearLicensed        : Year;
+        numberAccidents     : INTEGER;
+        numberViolations    : INTEGER;
+    WHERE
+        non_negative_accidents  : numberAccidents  >= 0;
+        non_negative_violations : numberViolations >= 0;
+    END_ENTITY;
+
+END_SCHEMA;
+
