@@ -1,28 +1,24 @@
 -- ----------------------------------------------------------------------------
 --
--- party - a party is either a person or organization.  
+-- template - 
 -- Author: William Shaffer (wshaffer@waysysweb.com)
 -- Date: 3 Mar 2025
 --
--- This module defines the party, person, and organization.
+-- This module provides 
 -- ----------------------------------------------------------------------------
 
 module name
 
+imports 
+        
 
+exports 
 
 definitions
 
 -- ----------------------------------------------------------------------------
 types
--- ----------------------------------------------------------------------------
-
-IdTax = string;
-
-AddressEmail = string;
-
-Party :: idTax : IdTax
-         email : AddressEmail;
+-- ---------------------------------------------------------------------------- 
 
 -- ----------------------------------------------------------------------------
 values
