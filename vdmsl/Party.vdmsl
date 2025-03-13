@@ -9,7 +9,9 @@
 
 module name
 
-
+exports types struct Party;
+              IdTax;
+              AddressEmail;
 
 definitions
 
@@ -17,9 +19,9 @@ definitions
 types
 -- ----------------------------------------------------------------------------
 
-IdTax = string;
+IdTax = seq of char;
 
-AddressEmail = string;
+AddressEmail = seq of char;
 
 Party :: idTax : IdTax
          email : AddressEmail;
