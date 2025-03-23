@@ -327,7 +327,8 @@ CodeCountry =
 
 CodePostal = seq of char;
 
-Address :: line1 : seq of char
+Address :: index : nat
+		   line1 : seq of char
            line2 : seq of char
            line3 : seq of char
            city  : seq of char

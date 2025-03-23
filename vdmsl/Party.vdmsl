@@ -9,9 +9,26 @@
 
 module name
 
+imports 
+    from Date 
+        types
+            Date renamed Date;
+        
+        functions 
+            age : Date * Date -> nat; 
+
 exports types struct Party;
+              struct Person;
+              struct Organization;
+              struct RelationParty;
+              struct RelationAddress;
+              struct Telephone;
+              struct Group;
               IdTax;
               AddressEmail;
+
+        functions 
+            agePerson : Person * Date -> nat;
 
 definitions
 
@@ -23,8 +40,87 @@ IdTax = seq of char;
 
 AddressEmail = seq of char;
 
-Party :: idTax : IdTax
+CodeGender :: <Male> 
+            | <Femail>
+            | <Unknown>;
+
+CodeStatusMarital :: <Married> 
+                   | <Single>
+                   | <Unknown>;
+
+CodeTypeRelationParty :: <Parent>
+        | <Child>
+        | <Sibling>
+        | <Spouse>
+        | <Employee>
+        | <Employer>
+        | <Doctor>
+        | <Patient>
+        | <Attorney>
+        | <Client>
+        | <Insurer>
+        | <Insured>
+        | <PrimaryContact>
+        | <Unspecified>;
+
+CodeTypeAddress :: <Billing>
+        | <Business>
+        | <Home>  
+        | <Mailing> 
+        | <Other>;
+
+CodeTypePhone :: <Home>
+               | <Work>
+               | <Mobile>
+               | <Other>
+               | <Unspecified>;
+
+CodeTypeGroup :: <TopGroup> 
+               | <SubGroup>;
+
+-- Party is either a person or organization.
+Party :: index : nat
+         idTax : IdTax
          email : AddressEmail;
+
+-- Person represents a person.
+Person :: indexParty : nat
+          nameFirst : seq of char
+          nameMiddle : seq of char 
+          nameLast : seq of char 
+          prefix : seq of char 
+          suffix : seq of char 
+          gender : CodeGender
+          dateBirth : Date
+          statusMarital : CodeStatusMarital;
+
+-- Organization represents a company, government entity, or other association.
+Organization :: indexParty : nat 
+          name : seq of char;
+
+Telephone :: indexParty : nat 
+             numberPhone : seq of char 
+             typePhone : CodeTypePhone; 
+
+-- Group is a hierarchical division of an insurer
+Group :: indexGroup : nat 
+          nameGroup : seq of char 
+          indexParent : nat
+          indexOrganization : nat
+          typeGroup : CodeTypeGroup; 
+
+-- RelationParty represents the relationship between two parties.
+-- This relation can be read: the primary party has the relationship
+-- with the secondary part.
+RelationParty :: indexPartyPrimary : nat 
+                 indexPartySecondary : nat 
+                 typeRelationParty : CodeTypeRelationParty 
+                 typeRelationPartyInverse : CodeTypeRelationParty;
+
+-- RelationAddress connects a party to an address of various types
+RelationAddress :: indexAddress : nat 
+                   indexParty : nat 
+                   typeAddress : CodeTypeAddress; 
 
 -- ----------------------------------------------------------------------------
 values
@@ -36,6 +132,11 @@ values
 functions
 -- ----------------------------------------------------------------------------
 
-
+agePerson: Person * Date -> nat 
+agePerson(person, dateCurrent) == 
+    let 
+        dateBirth = person.dateBirth
+    in 
+        Date`age(dateCurrent, dateBirth)
 
 end name
