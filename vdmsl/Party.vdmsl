@@ -1,6 +1,7 @@
 -- ----------------------------------------------------------------------------
 --
 -- party - a party is either a person or organization.  
+--
 -- Author: William Shaffer (wshaffer@waysysweb.com)
 -- Date: 3 Mar 2025
 --
@@ -10,12 +11,19 @@
 module name
 
 imports 
+    from Common 
+        types 
+            ObjectInsurance renamed ObjectInsurance,
+
     from Date 
         types
             Date renamed Date;
         
         functions 
-            age : Date * Date -> nat; 
+            age : Date * Date -> nat, 
+
+    from DateRange 
+        types DateRange renamed DateRange;
 
 exports types struct Party;
               struct Person;
@@ -79,12 +87,14 @@ CodeTypeGroup :: <TopGroup>
                | <SubGroup>;
 
 -- Party is either a person or organization.
-Party :: index : nat
+Party :: indexParty : nat
+         objectInsurance : ObjectInsurance
          idTax : IdTax
          email : AddressEmail;
 
 -- Person represents a person.
 Person :: indexParty : nat
+          objectInsurance : ObjectInsurance
           nameFirst : seq of char
           nameMiddle : seq of char 
           nameLast : seq of char 
@@ -96,6 +106,7 @@ Person :: indexParty : nat
 
 -- Organization represents a company, government entity, or other association.
 Organization :: indexParty : nat 
+          objectInsurance : ObjectInsurance
           name : seq of char;
 
 Telephone :: indexParty : nat 
@@ -104,6 +115,7 @@ Telephone :: indexParty : nat
 
 -- Group is a hierarchical division of an insurer
 Group :: indexGroup : nat 
+          objectInsurance : ObjectInsurance
           nameGroup : seq of char 
           indexParent : nat
           indexOrganization : nat
@@ -112,13 +124,17 @@ Group :: indexGroup : nat
 -- RelationParty represents the relationship between two parties.
 -- This relation can be read: the primary party has the relationship
 -- with the secondary part.
-RelationParty :: indexPartyPrimary : nat 
+RelationParty :: objectInsurance : ObjectInsurance
+                 effectivity : DateRange
+                 indexPartyPrimary : nat 
                  indexPartySecondary : nat 
                  typeRelationParty : CodeTypeRelationParty 
                  typeRelationPartyInverse : CodeTypeRelationParty;
 
 -- RelationAddress connects a party to an address of various types
-RelationAddress :: indexAddress : nat 
+RelationAddress :: objectInsurance : ObjectInsurance
+                   effectivity : DateRange
+                   indexAddress : nat 
                    indexParty : nat 
                    typeAddress : CodeTypeAddress; 
 

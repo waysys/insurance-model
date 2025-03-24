@@ -1,10 +1,11 @@
 -- ----------------------------------------------------------------------------
 --
--- Address - an address object and associated values
+-- Address - an address object and associated values.
+--
 -- Author: William Shaffer (wshaffer@waysysweb.com)
 -- Date: 12 Mar 2025
 --
--- This module provides 
+-- This module defines an address entity.
 -- ----------------------------------------------------------------------------
 
 module Address
@@ -12,6 +13,7 @@ module Address
 exports types Address;
     CodeCountry;
     CodeState;
+	CodePostal;
 
 definitions
 
@@ -327,7 +329,7 @@ CodeCountry =
 
 CodePostal = seq of char;
 
-Address :: index : nat
+Address :: indexAddress : nat
 		   line1 : seq of char
            line2 : seq of char
            line3 : seq of char

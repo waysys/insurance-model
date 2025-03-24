@@ -1,0 +1,50 @@
+-- ----------------------------------------------------------------------------
+--
+-- Common - Common types 
+
+-- Author: William Shaffer (wshaffer@waysysweb.com)
+-- Date: 3 Mar 2025
+--
+-- This module defines types used in various other modules. 
+-- ----------------------------------------------------------------------------
+
+module Common
+
+imports 
+    from Date 
+        types Date renamed Date,
+
+    from Time 
+        types Time renamed Time;
+
+exports 
+    types ObjectInsurance;
+
+definitions
+
+-- ----------------------------------------------------------------------------
+types
+-- ----------------------------------------------------------------------------
+
+-- ObjectInsurance represents fields that need to be present on all major entities
+-- that need change attribution.
+ObjectInsurance :: timeCreated : Time 
+                   dateCreated : Date 
+                   timeModified : Time 
+                   dateModified : Date 
+                   namePersonCreated : seq of char 
+                   namePersonModified : seq of char;
+
+-- ----------------------------------------------------------------------------
+values
+-- ----------------------------------------------------------------------------
+
+
+
+-- ----------------------------------------------------------------------------
+functions
+-- ----------------------------------------------------------------------------
+
+
+
+end Common

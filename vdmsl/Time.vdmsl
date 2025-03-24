@@ -1,0 +1,45 @@
+-- ----------------------------------------------------------------------------
+--
+-- time - time of day
+
+-- Author: William Shaffer (wshaffer@waysysweb.com)
+-- Date: 23 Mar 2025
+--
+-- This module defines the time of day. 
+-- ----------------------------------------------------------------------------
+
+module Time
+
+exports
+    types 
+        Time;
+
+definitions
+
+-- ----------------------------------------------------------------------------
+types
+-- ---------------------------------------------------------------------------- 
+
+Time :: hour : nat 
+        minute : nat 
+        second : nat
+inv mk_Time(hour, minute, second) == isValidTime(hour, minute, second);
+
+-- ----------------------------------------------------------------------------
+values
+-- ----------------------------------------------------------------------------
+
+
+
+-- ----------------------------------------------------------------------------
+functions
+-- ----------------------------------------------------------------------------
+
+-- isValidTime returns true if the time fields are valid.
+isValidTime: nat * nat * nat -> bool 
+isValidTime(hour, minute, second) ==
+    (0 <= hour and hour <= 23) and 
+    (0 <= minute and minute <= 59) and 
+    (0 <= second and second <= 59)
+
+end Time
