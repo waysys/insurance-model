@@ -1,0 +1,55 @@
+-- ----------------------------------------------------------------------------
+--
+-- Account - accounts
+
+-- Author: William Shaffer (wshaffer@waysysweb.com)
+-- Date: 3 Mar 2025
+--
+-- This module defines the various types of accounts. 
+-- ----------------------------------------------------------------------------
+
+module Account
+
+imports 
+       from Common 
+          types ObjectInsurance 
+
+exports 
+        types 
+            Account;
+
+definitions
+
+-- ----------------------------------------------------------------------------
+types
+-- ---------------------------------------------------------------------------- 
+
+AccountNumber = seq of char;
+
+CodeTypeAccount = <PolicyHolder>
+        | <Vendor>
+        | <Producer>
+        | <Company>
+        | <Other>;
+
+Account ::  indexAccount : nat 
+            numberAccount : AccountNumber 
+            indexHolderAccount : nat 
+            typeAccount : CodeTypeAccount;
+
+AccountHolderPolicy :: indexAccount : nat 
+                       
+           
+-- ----------------------------------------------------------------------------
+values
+-- ----------------------------------------------------------------------------
+
+
+
+-- ----------------------------------------------------------------------------
+functions
+-- ----------------------------------------------------------------------------
+
+
+
+end Account
